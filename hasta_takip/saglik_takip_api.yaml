@@ -1,0 +1,446 @@
+openapi: 3.0.3
+info:
+  title: Sağlık Takip API (Basit Versiyon)
+  description: >-
+    Tansiyon ve şeker hastalarının ilaç ve yemek çizelgelerini takip etmek
+    için geliştirilmiş REST API. 
+    
+    **Bu versiyon veritabanı veya kimlik doğrulama KULLANMAZ.**
+    Tüm veriler sunucu hafızasında (in-memory) tutulur ve sunucu
+    yeniden başladığında sıfırlanır. Hangi kullanıcı adına işlem
+    yapıldığı, URL'deki ID parametresi ile belirtilir.
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:5000
+    description: Yerel Geliştirme Sunucusu
+
+# API'yi gruplamak için etiketler
+tags:
+  - name: Patient
+    description: Hasta rolüne özel işlemler (çizelge görüntüleme)
+  - name: Doctor
+    description: Doktor rolüne özel işlemler (hasta onayı, çizelge yönetimi)
+  - name: Dietitian
+    description: Diyetisyen rolüne özel işlemler (hasta onayı, çizelge yönetimi)
+  - name: Debug
+    description: Test ve hata ayıklama için yardımcı uç noktalar
+
+# Yeniden kullanılabilir bileşenler (Veri Modelleri)
+components:
+  schemas:
+    # --- TEMEL MODELLER ---
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          example: kullaniciadi
+        role:
+          type: string
+          enum: [patient, doctor, dietitian]
+        tc_kimlik:
+          type: string
+          example: "11111111111"
+        birth_date:
+          type: string
+          format: date
+          example: "1990-01-01"
+        height:
+          type: number
+          format: float
+          example: 180
+        weight:
+          type: number
+          format: float
+          example: 75.5
+        hospital:
+          type: string
+          example: Şehir Hastanesi
+    
+    # --- ÇİZELGE MODELLERİ ---
+    MedicationScheduleItem:
+      type: object
+      required:
+        - day
+        - medication
+        - dosage
+        - frequency
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient_id:
+          type: integer
+          readOnly: true
+        doctor_id:
+          type: integer
+          readOnly: true
+        day:
+          type: string
+          example: Pazartesi
+        medication_name: # POST isteğinde 'medication' olarak gönderilmeli
+          type: string
+          example: Tansiyon İlacı A
+        dosage:
+          type: string
+          example: 10mg
+        frequency:
+          type: string
+          example: Sabah 1, Akşam 1
+
+    MealScheduleItem:
+      type: object
+      required:
+        - day
+        - meal
+        - portion
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient_id:
+          type: integer
+          readOnly: true
+        dietitian_id:
+          type: integer
+          readOnly: true
+        day:
+          type: string
+          example: Salı
+        meal_name: # POST isteğinde 'meal' olarak gönderilmeli
+          type: string
+          example: Öğle Yemeği
+        portion:
+          type: string
+          example: 1 porsiyon ızgara tavuk + salata
+
+    # --- YANIT MODELLERİ ---
+    SuccessResponse:
+      type: object
+      properties:
+        msg:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        msg:
+          type: string
+
+# API Uç Noktaları (Paths)
+paths:
+  # --- Debug ---
+  /api/users:
+    get:
+      tags: [Debug]
+      summary: Sistemdeki Tüm Kullanıcıları Listele
+      description: Hafızadaki tüm kullanıcıları (hasta, doktor, diyetisyen) listeler.
+      responses:
+        "200":
+          description: Kullanıcı listesi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  # --- Patient API ---
+  /api/patient/{patient_id}/schedule/medication:
+    get:
+      tags: [Patient]
+      summary: Hastanın İlaç Çizelgesini Görüntülemesi
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          description: Çizelgesi görüntülenecek hastanın ID'si
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Hastanın ilaç çizelgesi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MedicationScheduleItem"
+
+  /api/patient/{patient_id}/schedule/meal:
+    get:
+      tags: [Patient]
+      summary: Hastanın Yemek Çizelgesini Görüntülemesi
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          description: Çizelgesi görüntülenecek hastanın ID'si
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Hastanın yemek çizelgesi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MealScheduleItem"
+
+  # --- Doctor API ---
+  /api/doctor/{doctor_id}/patients/pending:
+    get:
+      tags: [Doctor]
+      summary: Doktordan Onay Bekleyen Hastaları Listele
+      parameters:
+        - name: doctor_id
+          in: path
+          required: true
+          description: İşlem yapan doktorun ID'si
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Onay bekleyen hastaların listesi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /api/doctor/{doctor_id}/patients/approve/{patient_id}:
+    post:
+      tags: [Doctor]
+      summary: Hastanın Erişim İsteğini Onayla (Doktor)
+      parameters:
+        - name: doctor_id
+          in: path
+          required: true
+          description: İşlem yapan doktorun ID'si
+          schema:
+            type: integer
+        - name: patient_id
+          in: path
+          required: true
+          description: Onaylanacak hastanın ID'si
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Hasta başarıyla onaylandı.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Onay isteği bulunamadı.
+
+  /api/doctor/{doctor_id}/patient/{patient_id}/schedule/medication:
+    post:
+      tags: [Doctor]
+      summary: Doktorun, Hasta İçin İlaç Çizelgesi Oluşturması/Güncellemesi
+      description: Mevcut çizelgeyi siler ve yenisini ekler.
+      parameters:
+        - name: doctor_id
+          in: path
+          required: true
+          description: İşlem yapan doktorun ID'si
+          schema:
+            type: integer
+        - name: patient_id
+          in: path
+          required: true
+          description: Çizelge oluşturulacak hastanın ID'si
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        description: Haftalık ilaç listesi.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  day:
+                    type: string
+                  medication:
+                    type: string
+                  dosage:
+                    type: string
+                  frequency:
+                    type: string
+            example:
+              - day: "Pazartesi"
+                medication: "Coraspin"
+                dosage: "100mg"
+                frequency: "Sabah 1"
+      responses:
+        "201":
+          description: İlaç çizelgesi başarıyla oluşturuldu.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "403":
+          description: Hastaya erişim izni yok.
+
+  /api/doctor/{doctor_id}/patient/{patient_id}/schedule/meal:
+    get:
+      tags: [Doctor]
+      summary: Doktorun, Hastanın Yemek Çizelgesini Görüntülemesi
+      parameters:
+        - name: doctor_id
+          in: path
+          required: true
+          description: İşlem yapan doktorun ID'si
+          schema:
+            type: integer
+        - name: patient_id
+          in: path
+          required: true
+          description: Görüntülenecek hastanın ID'si
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Hastanın yemek çizelgesi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MealScheduleItem"
+        "403":
+          description: Hastaya erişim izni yok.
+
+  # --- Dietitian API ---
+  /api/dietitian/{dietitian_id}/patients/pending:
+    get:
+      tags: [Dietitian]
+      summary: Diyetisyenden Onay Bekleyen Hastaları Listele
+      parameters:
+        - name: dietitian_id
+          in: path
+          required: true
+          description: İşlem yapan diyetisyenin ID'si
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Onay bekleyen hastaların listesi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /api/dietitian/{dietitian_id}/patients/approve/{patient_id}:
+    post:
+      tags: [Dietitian]
+      summary: Hastanın Erişim İsteğini Onayla (Diyetisyen)
+      parameters:
+        - name: dietitian_id
+          in: path
+          required: true
+          description: İşlem yapan diyetisyenin ID'si
+          schema:
+            type: integer
+        - name: patient_id
+          in: path
+          required: true
+          description: Onaylanacak hastanın ID'si
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Hasta başarıyla onaylandı.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Onay isteği bulunamadı.
+
+  /api/dietitian/{dietitian_id}/patient/{patient_id}/schedule/meal:
+    post:
+      tags: [Dietitian]
+      summary: Diyetisyenin, Hasta İçin Yemek Çizelgesi Oluşturması/Güncellemesi
+      description: Mevcut çizelgeyi siler ve yenisini ekler.
+      parameters:
+        - name: dietitian_id
+          in: path
+          required: true
+          description: İşlem yapan diyetisyenin ID'si
+          schema:
+            type: integer
+        - name: patient_id
+          in: path
+          required: true
+          description: Çizelge oluşturulacak hastanın ID'si
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        description: Haftalık yemek listesi.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  day:
+                    type: string
+                  meal:
+                    type: string
+                  portion:
+                    type: string
+            example:
+              - day: "Pazartesi"
+                meal: "Kahvaltı"
+                portion: "1 dilim peynir, 5 zeytin"
+      responses:
+        "201":
+          description: Yemek çizelgesi başarıyla oluşturuldu.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "403":
+          description: Hastaya erişim izni yok.
+
+  /api/dietitian/{dietitian_id}/patient/{patient_id}/schedule/medication:
+    get:
+      tags: [Dietitian]
+      summary: Diyetisyenin, Hastanın İlaç Çizelgesini Görüntülemesi
+      parameters:
+        - name: dietitian_id
+          in: path
+          required: true
+          description: İşlem yapan diyetisyenin ID'si
+          schema:
+            type: integer
+        - name: patient_id
+          in: path
+          required: true
+          description: Görüntülenecek hastanın ID'si
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Hastanın ilaç çizelgesi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MedicationScheduleItem"
+        "403":
+          description: Hastaya erişim izni yok.
