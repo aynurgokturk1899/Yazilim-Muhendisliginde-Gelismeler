@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # 1. Sağlık Takip API'si (Ana Uygulama)
+  saglik_takip_app: # Önceki servis adı
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: saglik_takip_app
+    ports:
+      - "5000:5000" # API: http://localhost:5000
+    volumes:
+      # client_app.py hariç, API'nin çalışması için gerekli tüm dosyalar
+      - ./app1.py:/app/app1.py
+      - ./patient_routes1.py:/app/patient_routes1.py
+      - ./doctor_routes1.py:/app/doctor_routes1.py
+      - ./dietitian_routes1.py:/app/dietitian_routes1.py
+      - ./memory_db.py:/app/memory_db.py
+    command: python app1.py
+    # client_app'e erişilebilmesi için aynı ağda kalması yeterlidir.
+
+  # docker-compose.yml (client_app servisi güncellendi)
+
+# ... diğer servisler ...
+
+  # 2. İstemci Uygulaması (Yeni Uygulama)
+  client_app:
+    build:
+      context: . # Aynı Dockerfile'ı veya yeni bir tane kullanabilir
+      dockerfile: Dockerfile
+    container_name: client_web_app
+    ports:
+      - "5001:5001" # İstemci: http://localhost:5001
+    volumes:
+      - .:/app # Tüm kodları mount et
+    # Yeni Komut: API (saglik_takip_app:5000) hazır olana kadar bekle.
+    command: sh -c "until nc -z saglik_takip_app 5000; do echo waiting for saglik_takip_app; sleep 2; done; python client_app.py"
+    
+    depends_on:
+      - saglik_takip_app
+
+# ... diğer servisler ...
+
+# 3. YENİ EKLENEN SERVİS: Doktor Paneli Uygulaması
+  doctor_client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doctor_web_app
+    ports:
+      - "5002:5002" # Yeni arayüz: http://localhost:5002
+    volumes:
+      - .:/app # Tüm kodları mount et
+    command: python doctor_client.py
+    depends_on:
+      - saglik_takip_app
+
+      # 4. YENİ EKLENEN SERVİS: Diyetisyen Paneli Uygulaması
+  dietitian_client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dietitian_web_app
+    ports:
+      - "5003:5003" # Yeni arayüz: http://localhost:5003
+    volumes:
+      - .:/app 
+    command: python dietitian_client.py
+    depends_on:
+      - saglik_takip_app
+
+
+      # 5. YENİ EKLENEN SERVİS: Hasta Paneli Uygulaması
+  patient_client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: patient_web_app
+    ports:
+      - "5004:5004" # Yeni arayüz: http://localhost:5004
+    volumes:
+      - .:/app 
+    command: python patient_client.py
+    depends_on:
+      - saglik_takip_app
+      
