@@ -1,65 +1,56 @@
-Sağlık Takip Sistemi REST API ve İstemciler
+# 🩺 Sağlık Takip Sistemi (Çok Servisli Docker Uygulaması)
 
-Bu proje, Flask kullanılarak geliştirilmiş bir Sağlık Takip API'si ve bu API'nin yeteneklerini gösteren birden fazla istemci uygulamasını (Doktor Paneli, Diyetisyen Paneli, Hasta Paneli) içerir. Tüm servisler Docker ve Docker Compose ile yönetilmektedir.
+Bu proje, Hastalar, Doktorlar ve Diyetisyenler için çizelge yönetimi sağlayan ve Flask tabanlı mikroservislerden oluşan bir sağlık takip sistemidir.
 
-🚀 Projeyi Çalıştırma
+## 🌟 Proje Mimarisi
 
-Projenin çalıştırılması ve gerekli Docker imajlarının oluşturulması için aşağıdaki adımları takip edin:
+Sistem, beş ayrı Docker servisi olarak çalışır ve portlar üzerinden birbirleriyle iletişim kurar:
 
-1. Docker İmajının Oluşturulması
+| Servis Adı | Port | Açıklama |
+| :--- | :--- | :--- |
+| **saglik_takip_app** | 5000 | Tüm veritabanı (in-memory) ve API rotalarını barındırır. |
+| **client_app** | 5001 | Kullanıcı Giriş/Kayıt Merkezi. |
+| **doctor_client** | 5002 | Doktor Paneli (Hasta onaylama ve İlaç Çizelgesi yönetimi). |
+| **dietitian_client** | 5003 | Diyetisyen Paneli (Hasta onaylama ve Yemek Çizelgesi yönetimi). |
+| **patient_client** | 5004 | Hasta Paneli (Çizelgeleri görüntüleme). |
 
-Projenin temel Python imajı, Dockerfile kullanılarak oluşturulur. İmajı oluşturmak için projenin ana dizininde aşağıdaki komutu çalıştırın:
+---
 
-docker build -t saglik-takip-img .
+## 🚀 Kurulum ve Çalıştırma
 
+Projeyi yerel makinenizde çalıştırmak için **Docker** ve **Docker Compose** kurulu olmalıdır.
 
-2. Docker Compose ile Başlatma
+### 1. Docker İmajını Oluşturma
 
-API ve temel istemci servisini tek bir komutla ayağa kaldırmak ve yayınlamak için:
+Projeye ait temel Python ortamı ve imajını `Dockerfile` üzerinden oluşturur. (Bu, projenin taşınabilir olmasını sağlar.)
 
-docker compose up -d
+```bash
+docker build -t saglik-takip-image .
+2. Servisleri Başlatma ve Yayınlama
+Tüm servisleri arka planda (detached mode) başlatır ve belirlenen portlar üzerinden yayın yapar:
 
+Bash
 
-(Bu komut, projenizi arka planda (-d) çalıştırır ve Dockerfile üzerinden imajları otomatik olarak oluşturur.)
+docker-compose up -d
+Komut Açıklaması:
 
-3. Erişim Adresleri
+docker-compose up: docker-compose.yml dosyasını okur ve tüm servisleri oluşturup başlatır.
 
-Servisler başarıyla başlatıldıktan sonra, aşağıdaki adreslerden erişim sağlayabilirsiniz:
+-d (Detach Mode): Servisleri arka planda çalıştırır, terminalinizi serbest bırakır.
 
-Servis Adı
+3. Servisleri Durdurma
+Arka planda çalışan tüm konteynerleri durdurmak ve kaldırmak için:
 
-Port
+Bash
 
-Erişim Adresi
+docker-compose down
+🌐 Erişimi Adresleri
+Uygulamaya erişim için tarayıcınızda aşağıdaki adresleri kullanın:
 
-Ana API Servisi
+Ana Giriş/Kayıt Merkezi: http://localhost:5001
 
-5000
+Doktor Paneli: http://localhost:5002
 
-http://localhost:5000/
+Diyetisyen Paneli: http://localhost:5003
 
-Temel İstemci (Kullanıcı Ekleme)
-
-5001
-
-http://localhost:5001/
-
-Doktor Paneli (doctor_client.py)
-
-5002
-
-http://localhost:5002/
-
-Diyetisyen Paneli (dietitian_client.py)
-
-5003
-
-http://localhost:5003/
-
-Hasta Paneli (patient_client.py)
-
-5004
-
-http://localhost:5004/
-
-Not: Bu docker-compose.yml dosyası sadece saglik_takip_app ve client_app servislerini içerir. Eğer Doktor (5002), Diyetisyen (5003) veya Hasta (5004) panellerini de çalıştırmak isterseniz, bu servisleri docker-compose.yml dosyasına eklemeniz gerekmektedir.
+Hasta Paneli: http://localhost:5004
