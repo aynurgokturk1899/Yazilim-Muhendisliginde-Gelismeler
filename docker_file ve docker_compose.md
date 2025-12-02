@@ -49,6 +49,7 @@ Uygulamaya erişim için tarayıcınızda aşağıdaki adresleri kullanın:
 
 Ana Giriş/Kayıt Merkezi: http://localhost:5001
 
+
 Doktor Paneli: http://localhost:5002
 
 Diyetisyen Paneli: http://localhost:5003
