@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sağlık Takip Sistemi</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5; /* Hafif gri arka plan */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Sayfada biraz yukarıda başlasın */
+            padding-top: 50px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px; /* Merkezdeki beyaz kutunun maksimum genişliği */
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Hafif gölge */
+            padding: 30px;
+        }
+
+        /* Başlık Alanı */
+        header h1 {
+            text-align: center;
+            color: #4CAF50; /* Yeşil renge yakın */
+            font-size: 24px;
+            padding-bottom: 20px;
+            margin-top: 0;
+        }
+        header h1 i {
+            color: #007bff; /* İkonu mavi yap */
+            margin-right: 10px;
+        }
+
+        /* Üstteki Butonlar */
+        .top-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px; /* Butonlar arası boşluk */
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .btn.primary {
+            background-color: #007bff; /* Giriş Yap butonu mavi */
+            color: white;
+        }
+
+        .btn.secondary {
+            background-color: #6c757d; /* Kayıt Ol butonu gri */
+            color: white;
+        }
+
+        /* Giriş Alanı */
+        .login-section {
+            border-top: 3px solid #4CAF50; /* Üstteki yeşil çizgi */
+            padding-top: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            color: #4CAF50; /* Yeşil renge yakın */
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+
+        .section-header i {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+
+        .section-header h2 {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        /* Form Alanları */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 400;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Padding'in genişliği etkilememesi için */
+        }
+
+        /* Submit Butonu */
+        .submit-btn {
+            width: 100%;
+            background-color: #007bff; /* Mavi renk */
+            color: white;
+            font-size: 16px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+    </style>
+    </head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <i class="fas fa-hospital-user"></i>
+                Sağlık Takip Sistemi Giriş/Kayıt
+            </h1>
+        </header>
+
+        <div class="top-buttons">
+            <button class="btn primary">Giriş Yap</button>
+            <button class="btn secondary">Kayıt Ol</button>
+        </div>
+
+        <div class="login-section">
+            <div class="section-header">
+                <i class="fas fa-lock"></i>
+                <h2>Giriş Yap</h2>
+            </div>
+            
+            <form>
+                <div class="form-group">
+                    <label for="rol">Rol:</label>
+                    <select id="rol" name="rol">
+                        <option value="hasta">Hasta</option>
+                        <option value="doktor">Doktor</option>
+                        <option value="admin">Yönetici</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="kullanici_adi">Kullanıcı Adı:</label>
+                    <input type="text" id="kullanici_adi" name="kullanici_adi" value="melike">
+                </div>
+                
+                <div class="form-group">
+                    <label for="sifre">Şifre:</label>
+                    <input type="password" id="sifre" name="sifre" value="password">
+                </div>
+                
+                <button type="submit" class="btn submit-btn">Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
