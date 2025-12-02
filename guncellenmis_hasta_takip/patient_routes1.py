@@ -1,4 +1,4 @@
-# patient_routes1.py (SON VE KESİN DÜZELTME)
+# patient_routes1.py hasta rutinleri
 
 from flask import Blueprint, jsonify, request
 import memory_db 
@@ -90,4 +90,5 @@ def get_my_meal_schedule(patient_id):
         s for s in memory_db.MEAL_SCHEDULES 
         if s['patient_id'] == patient_id
     ]
+
     return jsonify(schedules), 200
