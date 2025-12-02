@@ -15,3 +15,5 @@ Bu arayüz, tamamen HTML ve CSS ile yazıldığı için harici bir sunucu (serve
 
 1.  `index.html` dosyasını indirin.
 2.  Dosyayı herhangi bir modern web tarayıcısında (Chrome, Firefox, Edge vb.) çift tıklayarak açın.
+
+bu uygulamanın sadec giriş ekranının html kodu bulunuyor ileri ki zamanlarda kayıt olma ekranları da olacaktır
