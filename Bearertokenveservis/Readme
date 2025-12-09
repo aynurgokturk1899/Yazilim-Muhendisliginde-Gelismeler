@@ -1,0 +1,28 @@
+Bu iki kod (server.py ve client.py), ana Sağlık Takip Sisteminizden bağımsız bir şekilde, modern bir güvenlik mekanizması olan JWT (JSON Web Token) ve Bearer Token mantığını size öğretmek ve kanıtlamak için tasarlanmıştır.
+
+Bu kodların her biri ne işe yarar ve birlikte nasıl çalışırlar:
+
+1. server.py (API Sunucusu)
+Bu dosya, güvenlik (Authentication) işlemlerini yöneten bir API'dir.
+
+Giriş İşlemi (/login): Kullanıcı adı ve şifreyi kontrol eder. Eğer bilgiler doğruysa, kullanıcıyı sisteme kabul ettiğini belirten, şifrelenmiş ve süreli bir JWT Token oluşturur ve bunu istemciye gönderir.
+
+Token Oluşturma: PyJWT kütüphanesini kullanarak, kullanıcının kimliğini, süresini ve diğer bilgileri içeren güvenli bir token (imzalı dize) üretir.
+
+Korumalı Rota (/protected): Bu rota, normalde hassas verileri barındırır. Erişime izin vermeden önce, gelen isteğin başlığındaki (Header) Bearer Token'ı kontrol eder. Token geçerliyse, süresi dolmamışsa ve doğru anahtarla imzalanmışsa, veriye erişim izni verir.
+
+Özetle: server.py güvenlik görevlisidir. Kimlik kontrolü yapar ve başarılı olanlara giriş kartı (token) verir; kartı olmayanı veya sahte/süresi dolmuş kartı olanı içeri almaz.
+
+2. client.py (İstemci Uygulaması)
+Bu dosya, sunucu ile iletişim kuran ve JWT'yi kullanarak kaynaklara erişmeyi deneyen simüle edilmiş bir uygulamadır.
+
+Token Alma: Sunucudaki /login rotasını çağırır, kullanıcı adı ve şifreyi gönderir ve dönen JWT Token'ı saklar.
+
+Erişim Denemesi: Korunması gereken /protected rotasını çağırır. Bu çağrı sırasında, aldığı token'ı HTTP isteğinin Authorization: Bearer <token> başlığına ekler.
+
+Hata Testi: Hatalı şifre ve geçersiz token ile erişim denemeleri yaparak, sunucunun 401 (Unauthorized - Yetkisiz) hatasını doğru şekilde döndürüp döndürmediğini test eder.
+
+Özetle: client.py kullanıcıdır. Giriş yapar, token'ını alır ve bu token'ı kullanarak yetkili olduğu yerlere girmeye çalışır.
+
+Neden Önemliler?
+Bu iki kod, sizin Sağlık Takip Sistemi projenizin gelecekteki güvenlik mimarisinin temelidir. Sizin projenizde şu an sadece basit bir user_id ile giriş yapılıyor. Gerçek bir uygulama yaparsanız, tüm hastane/doktor panellerine erişimi, tıpkı bu alıştırmadaki gibi, JWT Token'lar ile korumanız gerekir.
