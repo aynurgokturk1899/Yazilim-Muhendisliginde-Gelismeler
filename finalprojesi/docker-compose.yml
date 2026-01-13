@@ -1,0 +1,173 @@
+version: '3.8'
+
+services:
+  # 1. Veritabanı Servisi (PostgreSQL)
+  db:
+    image: postgres:13
+    container_name: saglik_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: saglik_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d saglik_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Sağlık Takip API'si (Ana Uygulama)
+  saglik_takip_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: saglik_takip_app
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://admin:adminpassword@db:5432/saglik_db
+    # Veritabanı portunu (5432) dinler, açılınca uygulamayı başlatır.
+    command: sh -c "until nc -z db 5432; do echo Veritabani bekleniyor...; sleep 2; done; python app1.py"
+
+  # 3. İstemci Uygulaması
+  client_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: client_web_app
+    ports:
+      - "5001:5001"
+    volumes:
+      - .:/app
+    # API (port 5000) hazır olana kadar bekler
+    command: sh -c "until nc -z saglik_takip_app 5000; do echo API bekleniyor...; sleep 2; done; python client_app.py"
+    depends_on:
+      - saglik_takip_app
+
+  # 4. Doktor Paneli
+  doctor_client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doctor_web_app
+    ports:
+      - "5002:5002"
+    volumes:
+      - .:/app
+    command: python doctor_client.py
+    depends_on:
+      - saglik_takip_app
+
+  # 5. Diyetisyen Paneli
+  dietitian_client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dietitian_web_app
+    ports:
+      - "5003:5003"
+    volumes:
+      - .:/app
+    command: python dietitian_client.py
+    depends_on:
+      - saglik_takip_app
+
+  # 6. Hasta Paneli
+  patient_client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: patient_web_app
+    ports:
+      - "5004:5004"
+    volumes:
+      - .:/app
+    command: python patient_client.py
+    depends_on:
+      - saglik_takip_app
+
+  # 7. MCP Servisi (Yapay Zeka Ajanı)
+  mcp_server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: saglik_mcp_server
+    volumes:
+      - .:/app
+    stdin_open: true
+    tty: true
+    command: python -u mcp_server.py
+
+  # --- EK SERVİSLER ---
+
+  # 8. Sıcaklık Verisi Üreten Servis
+  weather_exporter:
+    image: python:3.11-slim
+    container_name: weather_exporter
+    working_dir: /app
+    volumes:
+      - ./weather_exporter.py:/app/weather_exporter.py
+    command: sh -c "pip install prometheus_client && python weather_exporter.py"
+    ports:
+      - "8000:8000"
+
+  # 9. Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_server
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+    depends_on:
+      - weather_exporter
+
+  # 10. Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+  # 11. Ollama (Yapay Zeka Motoru)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_service
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: always
+
+  # 12. Open WebUI (Yapay Zeka Sohbet Arayüzü) - YENİ
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open_webui
+    ports:
+      - "8081:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_AUTH=False      # <-- Bu satırın hizası üsttekiyle aynı olmalı
+      - ENABLE_SIGNUP=true    # <-- Garanti olsun diye bunu da ekleyin
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      - ollama
+    restart: always
+
+volumes:
+  postgres_data:
+  ollama_data:
+  open-webui-data: # Arayüz verilerini (sohbet geçmişi, kullanıcılar) saklar

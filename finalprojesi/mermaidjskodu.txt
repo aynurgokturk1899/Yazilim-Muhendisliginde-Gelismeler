@@ -1,0 +1,148 @@
+sequenceDiagram
+    autonumber
+    actor Diyetisyen as Diyetisyen
+    participant Client as Diyetisyen Paneli (dietitian_client.py)
+    participant API as API (dietitian_routes1.py)
+    participant DB as Veritabanı (PostgreSQL)
+
+    Note over Diyetisyen, DB: Hastaya Yemek Programı Atama Süreci
+
+    Diyetisyen->>Client: Gün, Öğün ve Porsiyon bilgilerini girer, "Kaydet"e basar
+    activate Client
+    
+    Note right of Client: Form verisi toplanır (schedule_data)
+    Client->>API: POST /api/dietitian/{dyt_id}/patient/{p_id}/schedule/meal
+    activate API
+    
+    API->>DB: Yetki Kontrolü (PatientLink)
+    activate DB
+    DB-->>API: Onaylı eşleşme mevcut
+    deactivate DB
+    
+    Note right of API: Çakışmayı önlemek için eski program silinir
+    API->>DB: Eski MealSchedule kayıtlarını sil
+    activate DB
+    DB-->>API: Silme tamamlandı
+    deactivate DB
+    
+    loop Her Bir Öğün İçin
+        API->>DB: Yeni MealSchedule nesnesi ekle
+    end
+    
+    API->>DB: Değişiklikleri Kaydet (Commit)
+    activate DB
+    DB-->>API: Kayıt Başarılı
+    deactivate DB
+    
+    API-->>Client: 201 Created {msg: "Çizelge oluşturuldu."}
+    deactivate API
+    
+    Client-->>Diyetisyen: Başarı mesajı gösterilir
+    deactivate Client
+
+
+
+
+
+
+
+
+
+sequenceDiagram
+    autonumber
+    actor Doc as Doktor
+    participant Client as Doktor Paneli (doctor_client.py)
+    participant API as API (doctor_routes1.py)
+    participant DB as Veritabanı (PostgreSQL)
+
+    Note over Doc, DB: Hastaya İlaç Çizelgesi Atama Süreci
+
+    Doc->>Client: İlaç bilgilerini (Gün, İlaç, Doz) girer ve "Kaydet"e basar
+    activate Client
+    
+    Note right of Client: Form verisi toplanır ve JSON formatına çevrilir
+    Client->>API: POST /api/doctor/{dr_id}/patient/{p_id}/schedule/medication
+    activate API
+    
+    API->>DB: Yetki Kontrolü (PatientLink tablosu)
+    activate DB
+    DB-->>API: Onaylı eşleşme bulundu
+    deactivate DB
+    
+    Note right of API: Çakışmayı önlemek için önce eskiler silinir
+    API->>DB: Bu hastanın eski çizelgesini sil (MedSchedule.delete)
+    activate DB
+    DB-->>API: Silme işlemi tamam
+    deactivate DB
+    
+    loop Gönderilen Her İlaç İçin
+        API->>DB: Yeni MedSchedule nesnesi ekle
+    end
+    
+    API->>DB: Değişiklikleri Kaydet (Commit)
+    activate DB
+    DB-->>API: Kayıt Başarılı
+    deactivate DB
+    
+    API-->>Client: 201 Created {msg: "Çizelge oluşturuldu."}
+    deactivate API
+    
+    Client-->>Doc: Başarı mesajı ile anasayfaya yönlendir
+    deactivate Client
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sequenceDiagram
+    autonumber
+    actor User as Kullanıcı
+    participant Client as Ana Giriş Ekranı (client_app.py)
+    participant API as Backend API (app1.py)
+    participant DB as Veritabanı (PostgreSQL)
+    participant Panel as İlgili Panel (Doctor/Patient/Dietitian)
+
+    Note over User, Panel: Kullanıcı Giriş ve Yönlendirme Akışı
+
+    User->>Client: Kullanıcı Adı, Şifre ve Rol Seçimi
+    activate Client
+    
+    Note right of Client: Form verisi API'ye gönderilir
+    Client->>API: POST /api/login {username, password, role}
+    activate API
+    
+    API->>DB: Veritabanında Kullanıcıyı Ara
+    activate DB
+    DB-->>API: Kullanıcı Bilgileri (veya None)
+    deactivate DB
+    
+    alt Giriş Başarılı
+        API-->>Client: 200 OK JSON {user_id, role, msg}
+        
+        Note right of Client: Rol kontrolüne göre yönlendirme yapılır
+        alt Rol: Doktor
+            Client->>User: Yönlendir -> localhost:5002 (Doktor Paneli)
+        else Rol: Diyetisyen
+            Client->>User: Yönlendir -> localhost:5003 (Diyetisyen Paneli)
+        else Rol: Hasta
+            Client->>User: Yönlendir -> localhost:5004 (Hasta Paneli)
+        end
+        
+    else Giriş Başarısız
+        API-->>Client: 401 Unauthorized {msg: "Hatalı şifre"}
+        Client-->>User: Hata Mesajını Göster
+    end
+    
+    deactivate API
+    deactivate Client

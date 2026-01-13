@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 1m # 1 dakikada bir veri çek
+
+scrape_configs:
+  - job_name: 'weather_exporter'
+    static_configs:
+      - targets: ['weather_exporter:8000']
+  
+  # Mevcut Flask uygulamanızı da izlemek isterseniz buraya ekleyebilirsiniz
+  # - job_name: 'flask_app'
+  #   static_configs:
+  #     - targets: ['saglik_takip_app:5000']
