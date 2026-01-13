@@ -47,16 +47,7 @@ Bu proje, doktorlar, diyetisyenler ve hastalar arasındaki etkileşimi yöneten,
 * **Güvenlik:** JWT (JSON Web Token) tabanlı kimlik doğrulama simülasyonları.
 
 
-Servis Adı,Port,Açıklama
-Giriş/Kayıt Paneli,5001,Kullanıcıların sisteme girdiği ana kapı (Gateway) - client_app.py
-Backend API,5000,Ana Flask API Sunucusu (Veritabanı işlemleri) - app1.py
-Doktor Paneli,5002,Doktor yönetim arayüzü - doctor_client.py
-Diyetisyen Paneli,5003,Diyetisyen yönetim arayüzü - dietitian_client.py
-Hasta Paneli,5004,Hasta görüntüleme arayüzü - patient_client.py
-Grafana,3000,Görselleştirme Paneli (Kullanıcı: admin / Şifre: admin_grafana_guvenli)
-Prometheus,9091,Metrik toplama sunucusu
-Open WebUI,8081,Yerel LLM (Ollama) ile sohbet arayüzü
-JWT Test Sunucusu,5005,(Manuel Çalıştırılır) Bağımsız Token test sunucusu
+
 
 
 ## 🛠️ Kurulum ve Çalıştırma
@@ -71,6 +62,16 @@ Proje ana dizininde terminali açın ve şu komutu çalıştırın:
 
 ``bash
 docker-compose up --build
+
+Servis Adı	Port	Görevi
+saglik_takip_app	5000	Ana Backend API: Veritabanı işlemleri, kullanıcı yönetimi ve iş mantığını (Business Logic) yürütür.
+saglik_db	5432	Veritabanı: PostgreSQL tabanlı; kullanıcı, hasta eşleşmeleri ve çizelge verilerini saklar.
+client_web_app	5001	Giriş/Kayıt Merkezi: Kullanıcıların sisteme kayıt olduğu ve rol bazlı yönlendirildiği ön yüz.
+doctor_web_app	5002	Doktor Paneli: Hasta onaylama ve ilaç çizelgesi oluşturma arayüzü.
+dietitian_web_app	5003	Diyetisyen Paneli: Beslenme programı hazırlama arayüzü.
+patient_web_app	5004	Hasta Paneli: Profil görüntüleme, ilaç ve yemek programlarını takip etme arayüzü.
+saglik_mcp_server	-	AI Ajanı (MCP): BMI hesaplama ve dış kaynaklardan motivasyon sözü çekme işlemlerini yapan yardımcı servis.
+
 
 
 🤖 Yapay Zeka ve MCP (Model Context Protocol)
