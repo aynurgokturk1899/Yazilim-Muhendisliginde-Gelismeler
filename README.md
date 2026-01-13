@@ -147,3 +147,41 @@ AI: Ollama, FastMCP, Open WebUI
 Monitoring: Prometheus, Grafana
 
 Diğer: Flasgger (Swagger UI), Requests, JWT
+
+
+İsteğiniz üzerine, projenizin güvenliğini ve kod kalitesini artıracak 5 kritik güvenlik ve iyileştirme önerisini aşağıda sunuyorum:
+
+1. Şifrelerin Düz Metin (Plain Text) Saklanması (Kritik Güvenlik Açığı)
+Mevcut kodunuzda, kullanıcı şifreleri veritabanına doğrudan kaydedilmekte ve giriş yapılırken doğrudan karşılaştırılmaktadır.
+
+Tespit: app1.py dosyasında giriş kontrolü if user and user.password == password: şeklinde yapılmaktadır. Ayrıca models.py dosyasında şifre sütunu düz string olarak tanımlanmıştır.
+
+Öneri: Şifreleri asla veritabanında açık halde tutmayın. Werkzeug.security kütüphanesinden generate_password_hash ve check_password_hash fonksiyonlarını kullanarak şifreleri hash (karma) formatında saklayın. Bu, veritabanınız ele geçirilse bile şifrelerin çalınmasını engeller.
+
+2. IDOR (Insecure Direct Object Reference) ve Oturum Yönetimi Eksikliği
+Uygulamanızda giriş yapıldıktan sonra kullanıcı kimliği URL parametresi (Query Parameter) olarak taşınmaktadır.
+
+Tespit: Örneğin doctor_client.py dosyasında request.args.get('id', 2, type=int) ile doktorun kimliği alınmaktadır. Bir kullanıcı, tarayıcı adres çubuğundaki ?id=2 değerini ?id=3 yaparak başka bir doktorun paneline yetkisiz erişim sağlayabilir.
+
+Öneri: server.py dosyasında denediğiniz JWT (JSON Web Token) yapısını ana uygulamanız olan app1.py'ye entegre edin. Kimlik bilgisini URL'de taşımak yerine, giriş sonrası üretilen Token'ı HTTP Header (Authorization: Bearer ...) içinde taşıyarak sunucuda doğrulayın.
+
+3. XSS (Cross-Site Scripting) Riski ve Template Kullanımı
+HTML içerikleri Python kodu içinde string olarak oluşturulmakta ve render_template_string ile sunulmaktadır.
+
+Tespit: doctor_client.py ve diğer istemci dosyalarında HTML_TEMPLATE değişkenleri f-string (formatlı string) olarak tanımlanmıştır. Eğer bir kullanıcı, ilaç adı veya hasta ismi yerine <script>alert('Hacked')</script> gibi bir kod girerse, bu kod diğer kullanıcıların tarayıcısında çalıştırılabilir (Code Injection).
+
+Öneri: Flask'ın şablon motoru olan Jinja2'nin .html dosyalarını kullanın (render_template). Jinja2, değişkenleri varsayılan olarak "escape" ederek (zararsız hale getirerek) XSS saldırılarını otomatik olarak önler.
+
+4. Hassas Verilerin Kod İçinde Saklanması (Hardcoded Secrets)
+Veritabanı şifreleri ve gizli anahtarlar kodun içine gömülmüş durumdadır.
+
+Tespit: app1.py içinde veritabanı bağlantısı için varsayılan değer olarak postgresql://admin:adminpassword@... tanımlanmıştır. Ayrıca server.py dosyasında SECRET_KEY = "super-gizli-anahtar-123" şeklinde açıkça yazılmıştır.
+
+Öneri: Bu değerleri koddan tamamen kaldırın. Yüklediğiniz .env dosyasını aktif olarak kullanın ve Python tarafında os.environ.get('SECRET_KEY') şeklinde çağırın. .env dosyasını asla Git geçmişine (commit) eklemeyin.
+
+5. Docker Servis İzolasyonu ve Port Güvenliği
+Docker Compose yapılandırmanızda bazı servisler dış dünyaya gereksiz yere açılmış durumdadır.
+
+Tespit: docker-compose.yml dosyasında veritabanı servisi (db), 5432:5432 portu ile dış dünyaya açılmıştır. Bu, internete açık bir sunucuda veritabanınıza dışarıdan saldırı yapılmasına olanak tanır. Ayrıca open-webui servisinde WEBUI_AUTH=False ayarı yapılmıştır, bu da paneli herkese açık hale getirir.
+
+Öneri: Veritabanı gibi backend servislerinin ports kısmını kaldırın veya sadece localhost'a açın (127.0.0.1:5432:5432). Uygulamalarınız (app1.py vb.) Docker ağı (network) içinde veritabanına servis ismiyle (db) zaten erişebilir; dışarıdan erişime gerek yoktur.
