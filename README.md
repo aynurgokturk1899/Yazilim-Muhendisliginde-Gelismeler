@@ -65,13 +65,21 @@ docker-compose up --build
 
 Servis Adı	Port	Açıklama
 Giriş/Kayıt Paneli	5001	Kullanıcıların sisteme girdiği ana kapı (Gateway) - client_app.py
+
 Backend API	5000	Ana Flask API Sunucusu (Veritabanı işlemleri) - app1.py
+
 Doktor Paneli	5002	Doktor yönetim arayüzü - doctor_client.py
+
 Diyetisyen Paneli	5003	Diyetisyen yönetim arayüzü - dietitian_client.py
+
 Hasta Paneli	5004	Hasta görüntüleme arayüzü - patient_client.py
+
 Grafana	3000	Görselleştirme Paneli (Kullanıcı: admin / Şifre: admin_grafana_guvenli)
+
 Prometheus	9091	Metrik toplama sunucusu
+
 Open WebUI	8081	Yerel LLM (Ollama) ile sohbet arayüzü
+
 JWT Test Sunucusu	5005	(Manuel Çalıştırılır) Bağımsız Token test sunucusu
 
 
